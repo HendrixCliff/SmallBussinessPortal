@@ -11,7 +11,7 @@ const rateLimit = require("express-rate-limit");
 // 🚀 Rate Limiting
 const limiter = rateLimit({
   windowMs: 5 * 60 * 60 * 1000,
-  max: 10,
+  max: 100,
   message: "Please come back tomorrow",
 });
 
