@@ -27,26 +27,36 @@ const allowedOrigins = [
 // ✅ CORS Middleware (Fixes Array Issue)
 app.use(
   cors({
-    origin: (origin, callback) => {
+    origin: function (origin, callback) {
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        console.log(`❌ CORS BLOCKED: ${origin}`);
-        callback(new Error("CORS not allowed for this origin"), false);
+        callback(new Error("Not allowed by CORS"));
       }
     },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], 
-    allowedHeaders: ["Content-Type", "Authorization"], 
-    credentials: true, 
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
   })
 );
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header("Access-Control-Allow-Origin", origin);
+  }
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.header("Access-Control-Allow-Credentials", "true");
+  next();
+});
 
 // ✅ Handle CORS Preflight Requests Correctly
 app.options("*", cors());
 
 // ✅ Debug Incoming Requests
 app.use((req, res, next) => {
-  console.log("Incoming Request Origin:", req.headers.origin);
+  
   next();
 });
 
