@@ -39,18 +39,7 @@ app.options("*", (req, res) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "mysecret",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: false, // ✅ Set to true only in production (HTTPS)
-      httpOnly: true, // ✅ Prevent XSS attacks
-      sameSite: "lax", // ✅ Prevent CSRF issues
-    },
-  })
-);
+
 
 app.use(passport.initialize());
 
