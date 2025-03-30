@@ -17,9 +17,20 @@ app.use(require('helmet')());
 
 
 // ✅ Set up CORS BEFORE any routes or session middleware
+const allowedOrigins = [
+  "http://localhost:5173", 
+  "https://small-business-portal-frontend.vercel.app"
+];
+
 app.use(
   cors({
-    origin: ['http://localhost:5173', 'https://small-business-portal-frontend.vercel.app'],
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS not allowed for this origin"), false);
+      }
+    },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // ✅ Allowed HTTP methods
     allowedHeaders: ["Content-Type", "Authorization"], // ✅ Allow necessary headers
     credentials: true, // ✅ Required for cookies & authentication
