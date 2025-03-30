@@ -3,63 +3,68 @@ const dotenv = require("dotenv");
 const passport = require("./passportConfig");
 const cors = require("cors");
 
-
 dotenv.config({ path: "./config.env" });
 
 const app = express();
+const rateLimit = require("express-rate-limit");
 
-const rateLimit = require('express-rate-limit');
-const limiter = rateLimit({  windowMs: 5 * 60 * 60 * 1000 , max: 10, message: "Please come back tomorrow" });
+// 🚀 Rate Limiting
+const limiter = rateLimit({
+  windowMs: 5 * 60 * 60 * 1000,
+  max: 10,
+  message: "Please come back tomorrow",
+});
 
 app.use(limiter);
-app.use(require('helmet')());
+app.use(require("helmet")());
 
-
-
-// ✅ Set up CORS BEFORE any routes or session middleware
+// 🌍 Allowed Origins (for development & production)
 const allowedOrigins = [
-  "http://localhost:5173", 
-  "https://small-business-portal-frontend.vercel.app"
+  "http://localhost:5173",
+  "https://small-business-portal-frontend.vercel.app",
 ];
 
+// ✅ CORS Middleware (Fixes Array Issue)
 app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
+        console.log(`❌ CORS BLOCKED: ${origin}`);
         callback(new Error("CORS not allowed for this origin"), false);
       }
     },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // ✅ Allowed HTTP methods
-    allowedHeaders: ["Content-Type", "Authorization"], // ✅ Allow necessary headers
-    credentials: true, // ✅ Required for cookies & authentication
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], 
+    allowedHeaders: ["Content-Type", "Authorization"], 
+    credentials: true, 
   })
 );
 
-// ✅ Handle preflight requests properly
+// ✅ Handle CORS Preflight Requests Correctly
 app.options("*", (req, res) => {
-  res.header("Access-Control-Allow-Origin", ['http://localhost:5173', 'https://small-business-portal-frontend.vercel.app']);
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.header("Access-Control-Allow-Credentials", "true");
-  res.sendStatus(200);
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header("Access-Control-Allow-Origin", origin);
+    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.header("Access-Control-Allow-Credentials", "true");
+    return res.sendStatus(200);
+  }
+  return res.sendStatus(403);
 });
 
-// ✅ Middleware Order: CORS → Sessions → Routes
+// ✅ Debug Incoming Requests
+app.use((req, res, next) => {
+  console.log("Incoming Request Origin:", req.headers.origin);
+  next();
+});
+
+// ✅ Middleware Order: CORS → Body Parsers → Sessions → Routes
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-
-
 app.use(passport.initialize());
-
-
-// ✅ Custom Middleware
-app.use((req, res, next) => {
-  console.log("Custom Middleware");
-  next();
-});
 
 // ✅ Import Routes
 const productRoutes = require("./routes/productRoutes");
@@ -69,30 +74,27 @@ const CustomError = require("./Utils/CustomError");
 const productVideoRoute = require("./routes/productVideoRoutes");
 const deleteProductRoute = require("./routes/deleteAndUpdateProductRoute");
 const messageRoute = require("./routes/messageRoutes");
-const sectionRoute = require("./routes/sectionRoute")
-const orderRoute = require("./routes/orderRoute")
-const transferRoute = require("./routes/transferRoute")
+const sectionRoute = require("./routes/sectionRoute");
+const orderRoute = require("./routes/orderRoute");
+const transferRoute = require("./routes/transferRoute");
 
-// ✅ Apply Routes
+// ✅ Apply Routes (Fixed Section Route)
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/products", productRoutes);
 app.use("/api/v1/videos", productVideoRoute);
 app.use("/api/v1/products/", deleteProductRoute);
 app.use("/api/v1/messages", messageRoute);
-app.use("api/v1/sections", sectionRoute)
-app.use("/api/v1/orders", orderRoute)
-app.use("/api/v1/transfer", transferRoute)
+app.use("/api/v1/sections", sectionRoute); 
+app.use("/api/v1/orders", orderRoute);
+app.use("/api/v1/transfer", transferRoute);
 
-// 🌍 Test Route
+
 app.get("/", (req, res) => res.send("Home Page"));
 
-// 🏆 Google OAuth Login
-app.get(
-  "/auth/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
-);
 
-// ✅ Google OAuth Callback
+app.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
+
+
 app.get(
   "/auth/google/callback",
   passport.authenticate("google", {
@@ -101,7 +103,7 @@ app.get(
   })
 );
 
-// 🔒 Protected Route (Only for Authenticated Users)
+
 app.get("/dashboard", (req, res) => {
   if (!req.isAuthenticated()) {
     return res.redirect("/");
@@ -109,7 +111,7 @@ app.get("/dashboard", (req, res) => {
   res.send(`Welcome, ${req.user.displayName}!`);
 });
 
-// 🚪 Logout
+
 app.get("/logout", (req, res) => {
   req.logout((err) => {
     if (err) return next(err);
@@ -117,12 +119,12 @@ app.get("/logout", (req, res) => {
   });
 });
 
-// 🛑 Handle Undefined Routes
+
 app.all("*", (req, res, next) => {
   next(new CustomError(`Can't find ${req.originalUrl} on the server!`, 404));
 });
 
-// 🔥 Global Error Handler
+
 app.use(globalErrorHandler);
 
 module.exports = app;
