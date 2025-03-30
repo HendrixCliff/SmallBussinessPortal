@@ -3,7 +3,6 @@ const http = require("http");
 const cors = require("cors");
 const app = require("./app")
 const { initializeSocket } = require("./Utils/socket");
-const { connectRedis } = require("./Utils/redis");
 const connectDB = require("./Utils/db");
 const cron = require('node-cron');
 const winston = require('winston');
