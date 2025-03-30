@@ -2,7 +2,6 @@ require("dotenv").config({path: "./config.env"});
 const http = require("http");
 const cors = require("cors");
 const app = require("./app")
-const { initializeSocket } = require("./Utils/socket");
 const connectDB = require("./Utils/db");
 const cron = require('node-cron');
 const winston = require('winston');
@@ -24,10 +23,7 @@ const server = http.createServer(app);
 // ✅ Connect to MongoDB
 connectDB();
 
-// ✅ Connect to Redis & Initialize Socket.IO
-connectRedis().then(({ pubClient, subClient }) => {
-  initializeSocket(server, pubClient, subClient);
-});
+
 
 // ✅ Start Server
 const PORT = process.env.PORT || 8000;
