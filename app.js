@@ -2,7 +2,7 @@ const express = require("express");
 const dotenv = require("dotenv");
 const passport = require("./passportConfig");
 const cors = require("cors");
-const session = require("express-session");
+
 
 dotenv.config({ path: "./config.env" });
 
@@ -53,7 +53,7 @@ app.use(
 );
 
 app.use(passport.initialize());
-app.use(passport.session());
+
 
 // ✅ Custom Middleware
 app.use((req, res, next) => {
