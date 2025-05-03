@@ -3,6 +3,7 @@ const dotenv = require("dotenv");
 const passport = require("./passportConfig");
 const cors = require("cors");
 
+
 dotenv.config({ path: "./config.env" });
 
 const app = express();
@@ -77,6 +78,7 @@ const messageRoute = require("./routes/messageRoutes");
 const sectionRoute = require("./routes/sectionRoute");
 const orderRoute = require("./routes/orderRoute");
 const transferRoute = require("./routes/transferRoute");
+const businessRoutes = require("./routes/businessRoute");
 
 // ✅ Apply Routes (Fixed Section Route)
 app.use("/api/v1/auth", authRoutes);
@@ -87,7 +89,7 @@ app.use("/api/v1/messages", messageRoute);
 app.use("/api/v1/sections", sectionRoute); 
 app.use("/api/v1/orders", orderRoute);
 app.use("/api/v1/transfer", transferRoute);
-
+app.use("/api/businesses", businessRoutes);
 
 app.get("/", (req, res) => res.send("Home Page"));
 

@@ -1,7 +1,5 @@
 const Product = require("../models/productSchema")
 const asyncErrorHandler = require("./../Utils/asyncErrorHandler")
-const path = require("path");
-// const sharp = require("sharp")
 const fs = require("fs");
 const cloudinary = require("cloudinary").v2;
 const Video = require("./../models/productVideoSchema")

@@ -1,7 +1,7 @@
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
-const productController = require("./../controllers/productsController");
+const { getAllProducts,  deleteProduct, uploadProduct } = require("./../controllers/productsController");
 
 const router = express.Router();
 
@@ -47,10 +47,10 @@ router.post(
   "/upload",
   upload.array("images", 5),  // Allow multiple image uploads (up to 5)
   handleMulterError,          // Handle upload errors
-  productController.uploadProduct
+  uploadProduct
 );
 
-router.get("/", productController.getAllProducts);
-router.delete("/products/:id", productController.deleteProduct);
+router.get("/", getAllProducts);
+router.delete("/products/:id", deleteProduct);
 
 module.exports = router;

@@ -6,6 +6,7 @@ const asyncErrorHandler = require("./../Utils/asyncErrorHandler")
 const passport = require("./../passportConfig")
 const dotenv = require("dotenv")
 const CustomError = require("./../Utils/CustomError")
+const { sendForgotPasswordEmail } = require('./../email');
 dotenv.config({path: "./config.env"})
 
 
@@ -206,7 +207,72 @@ const signToken = id => {
         }
     }
 
+    exports.forgotPassword = asyncErrorHandler(async (req, res, next) => {
+      const user = await User.findOne({ email: req.body.email });
+      if (!user) {
+          return next(new CustomError("There is no user with this email address", 404));
+      }
   
+      const resetToken = user.createResetPasswordToken();
+      await user.save({ validateBeforeSave: false });
+  
+      const resetUrl = `${req.protocol}://${req.get("host")}/api/v1/auth/resetPassword/${resetToken}`;
+  
+      try {
+          // Send the password reset email
+          await sendForgotPasswordEmail(user.email, resetUrl);
+  
+          res.status(200).json({
+              status: "success",
+              message: "Password reset link sent to the user's email",
+          });
+      } catch (err) {
+          // Reset token fields in case of an email failure
+          user.passwordResetToken = undefined;
+          user.passwordResetTokenExpires = undefined;
+          await user.save({ validateBeforeSave: false });
+  
+          console.log(err);
+          return next(
+              new CustomError("There was an error sending the email. Try again later", 500)
+          );
+      }
+  });
+
+  exports.resetPassword = asyncErrorHandler(async (req, res, next) => {
+    // 1. Hash the token from the URL
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(req.params.token)
+      .digest("hex");
+  
+    // 2. Find the user based on token and expiration
+    const user = await User.findOne({
+      passwordResetToken: hashedToken,
+      passwordResetExpires: { $gt: Date.now() }
+    });
+  
+    // 3. Handle invalid or expired token
+    if (!user) {
+      return next(new CustomError("Token is invalid or has expired", 400));
+    }
+  
+    
+    user.password = req.body.password;
+    user.confirmPassword = req.body.confirmPassword;
+  
+    
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+  
+    
+    user.passwordChangedAt = Date.now();
+  
+    
+    await user.save();
+  
+    createSendResponse(user, 200, res);
+  });
 
     exports.verifyAdmin = (req, res, next) => {
     try {

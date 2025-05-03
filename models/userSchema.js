@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
-const bcrypt = require("bcryptjs")
-const validator = require("validator")
-const crypto = require("crypto")
+const bcrypt = require("bcryptjs");
+const validator = require("validator");
+const crypto = require("crypto");
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -16,71 +16,74 @@ const userSchema = new mongoose.Schema({
     lowercase: true,
     validate: [validator.isEmail, "Please enter a valid email"],
   },
- phoneNumber: {
- type: String,
- 
- },
+  phoneNumber: {
+    type: String,
+  },
   country: {
     type: String,
-required: [true, "Please enter a country"],
+    required: [true, "Please enter a country"],
   },
   date: {
-    type: Date, 
-   required: true, 
- },
+    type: Date,
+    required: true,
+  },
   photo: String,
-role: {
+  role: {
     type: String,
-    enum: ["user", "admin"], 
-    default: "admin", 
+    enum: ["user", "admin"],
+    default: "admin",
     select: false,
-},
+  },
   password: {
     type: String,
     minlength: 5,
     required: [true, "Password is required please provide one for yourself"],
-   select: false
-},
+    select: false
+  },
   confirmPassword: {
     type: String,
     minlength: 5,
-    //required: [true, "Please provide a confirmation to your password"],
     validate: {
-        validator: function(val) {
-          return  val === this.password;
-        },
-       
-        message: "Password and confirmPassword do not match"
-    }  
-},
-active : {
+      validator: function(val) {
+        return val === this.password;
+      },
+      message: "Password and confirmPassword do not match"
+    }
+  },
+  active: {
     type: Boolean,
     select: false,
     default: true
-},
-
-
+  },
+  passwordResetToken: String,
+  passwordResetExpires: Date
 });
 
+// 🔐 Hash the password before saving
 userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next(); // Only hash if password is new/changed
-
-  this.password = await bcrypt.hash(this.password, 12); // Hash password
+  if (!this.isModified("password")) return next();
+  this.password = await bcrypt.hash(this.password, 12);
   next();
 });
+
+// 👁️ Filter out inactive users on find queries
 userSchema.pre(/^find/, function(next) {
-     this.find({active: {$ne: false}})
-     
-     next()
- })
+  this.find({ active: { $ne: false } });
+  next();
+});
 
+// 🔁 Password comparison method
 userSchema.methods.comparePasswordInDb = async function(pswd, pswdDb) {
-    return await bcrypt.compare(pswd, pswdDb)
- }
+  return await bcrypt.compare(pswd, pswdDb);
+};
 
-
-
+// 🔑 Create password reset token method
+userSchema.methods.createResetPasswordToken = function() {
+  const resetToken = crypto.randomBytes(32).toString('hex'); // Plain token
+  this.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex'); // Hashed
+  this.passwordResetExpires = Date.now() + 10 * 60 * 1000; // Valid for 10 minutes
+  return resetToken; // Send plain token to user
+};
 
 const User = mongoose.model('User', userSchema);
-
 module.exports = User;
